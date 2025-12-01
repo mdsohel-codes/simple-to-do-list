@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Simple Modern To‑Do</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="todo-wrap" role="application" aria-label="Simple to-do application">
+    <header>
+      <div>
+        <h1>Simple To‑Do</h1>
+        <p>Lightweight, responsive, To-Do List</p>
+      </div>
+      <div class="controls">
+        <button class="small" id="clear-done">Clear completed</button>
+        <button class="small" id="clear-all">Clear all</button>
+      </div>
+    </header>
+
+    <div class="input-row">
+      <input id="task-input" type="text" placeholder="Add a new task and press Enter or click Add" aria-label="New task" />
+      <button id="add-btn">Add</button>
+    </div>
+
+    <ul id="list" class="todo-list" aria-live="polite"></ul>
+
+    <footer>
+      <div id="count">0 items</div>
+      <div class="meta">Tip: click the square to complete, trash to delete.</div>
+    </footer>
+  </div>
+
+  <script>
+    const listEl = document.getElementById('list');
+    const input = document.getElementById('task-input');
+    const addBtn = document.getElementById('add-btn');
+    const countEl = document.getElementById('count');
+    const clearDone = document.getElementById('clear-done');
+    const clearAll = document.getElementById('clear-all');
+
+    let todos = JSON.parse(localStorage.getItem('simple_todos') || '[]');
+
+    function save(){ localStorage.setItem('simple_todos', JSON.stringify(todos)); }
+
+    function render(){
+      listEl.innerHTML = '';
+      if(!todos.length){
+        listEl.innerHTML = '<li class="item" style="opacity:.7"><div class="left"><div class="meta">Your list is empty — add a task!</div></div></li>';
+        countEl.textContent = '0 items';
+        return;
+      }
+
+      todos.forEach((t, i) => {
+        const li = document.createElement('li');
+        li.className = 'item';
+
+        const left = document.createElement('div'); left.className='left';
+        const cb = document.createElement('button'); cb.className='checkbox'+(t.done? ' checked':''); cb.setAttribute('aria-pressed', t.done);
+        cb.addEventListener('click', ()=>{ todos[i].done = !todos[i].done; save(); render(); });
+        cb.innerHTML = t.done ? '✓' : '';
+
+        const title = document.createElement('div'); title.className = 'title' + (t.done? ' done':'');
+        title.textContent = t.text;
+
+        left.appendChild(cb);
+        left.appendChild(title);
+
+        const actions = document.createElement('div'); actions.className='actions';
+        const del = document.createElement('button'); del.className='icon-btn'; del.setAttribute('aria-label','Delete task'); del.textContent='🗑';
+        del.addEventListener('click', ()=>{ todos.splice(i,1); save(); render(); });
+
+        actions.appendChild(del);
+
+        li.appendChild(left);
+        li.appendChild(actions);
+        listEl.appendChild(li);
+      });
+
+      countEl.textContent = todos.length + (todos.length===1? ' item':' items');
+    }
+
+    function addTask(text){
+      const trimmed = text.trim();
+      if(!trimmed) return;
+      todos.unshift({ text: trimmed, done:false, created: Date.now() });
+      save(); render();
+    }
+
+    addBtn.addEventListener('click', ()=>{ addTask(input.value); input.value=''; input.focus(); });
+    input.addEventListener('keydown', (e)=>{ if(e.key === 'Enter'){ addTask(input.value); input.value=''; } });
+    clearDone.addEventListener('click', ()=>{ todos = todos.filter(t => !t.done); save(); render(); });
+    clearAll.addEventListener('click', ()=>{ if(confirm('Delete all tasks?')){ todos=[]; save(); render(); } });
+
+    render();
+  </script>
+</body>
+</html>
